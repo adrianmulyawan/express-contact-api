@@ -12,11 +12,11 @@ const checkUserEmail = async (req, res, next) => {
 
   // console.info(user.isActive);
 
-  if (user && user.isActive === false) {
+  if (user && user.isActive) {
     return res.status(400).json({
       status: 'Failed',
       statusCode: 400,
-      message: 'Email has been used and actived!'
+      message: 'Email has been used!'
     });
   }
 
