@@ -12,7 +12,7 @@ const checkUserEmail = async (req, res, next) => {
 
   // console.info(user.isActive);
 
-  if (user && user.isActive) {
+  if (user) {
     return res.status(400).json({
       status: 'Failed',
       statusCode: 400,
