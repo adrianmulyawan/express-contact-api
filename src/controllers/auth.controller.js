@@ -4,18 +4,56 @@ const User = Model.User;
 require('dotenv').config();
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
+const validator = require('validator');
 
 const saltRounds = +process.env.SALT_ROUNDS;
 
 const register = async (req, res) => {
   try {
+    // > Tangkap inputan user
     const { name, email, password } = req.body;
 
-    if (!name || !email || !password) {
+    // > Validasi Inputan
+    if (validator.isEmpty(name)) {
       return res.status(400).json({
         status: 'Failed',
         statusCode: 400,
-        message: 'Name, Email, and Password is Required!'
+        message: 'Error in Name Field!',
+        error: 'Name is Empty!'
+      });
+    } 
+
+    if (validator.isEmpty(email)) {
+      return res.status(400).json({
+        status: 'Failed',
+        statusCode: 400,
+        message: 'Error in Email Field!',
+        error: 'Email is Empty!'
+      });
+    }
+
+    if (validator.isEmail(email) === false) {
+      return res.status(400).json({
+        status: 'Failed',
+        statusCode: 400,
+        message: 'Error in Email Field!',
+        error: 'Email not valid!'
+      });
+    }
+
+    const sanitizePassword = validator.isStrongPassword(password, {
+      minLength: 8,
+      minLowercase: 1,
+      minUppercase: 1,
+      minNumbers: 1,
+      minSymbols: 0
+    });
+    if (sanitizePassword === false) {
+      return res.status(400).json({
+        status: 'Failed',
+        statusCode: 400,
+        message: 'Error in Password Field!',
+        error: 'Password Recuirment min length = 8, min lowercase = 1, min uppercase = 1, min number = 1'
       });
     }
 
@@ -48,8 +86,10 @@ const register = async (req, res) => {
       });
     }
 
+    // > Encrypt password
     const encryptPassword = await bcrypt.hash(password, saltRounds);
     
+    // > Create user
     const dataUser = await User.create({
       id: uuidv4(),
       name: name,
@@ -58,6 +98,7 @@ const register = async (req, res) => {
       expiredTime: new Date(),
     });
 
+    // > Result
     return res.status(201).json({
       status: 'Success',
       statusCode: 201,
