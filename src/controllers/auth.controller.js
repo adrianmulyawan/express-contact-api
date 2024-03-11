@@ -19,6 +19,35 @@ const register = async (req, res) => {
       });
     }
 
+    // > Cek user 
+    const userExists = await User.findOne({
+      where: {
+        email: email
+      }
+    });
+
+    if (userExists && userExists.isActive) {
+      return res.status(400).json({
+        status: 'Failed',
+        statusCode: 400,
+        message: 'Email has been used and actived!',
+        error: 'Email is already activated!'
+      });
+    } else if (userExists && !userExists.isActive && Date.parse(userExists.expiredTime) > new Date()) {
+      return res.status(400).json({
+        status: 'Failed',
+        statusCode: 400,
+        message: 'Email has been used and actived!',
+        error: 'Email already registered, please check your email!'
+      });
+    } else {
+      User.destroy({
+        where: {
+          email: email
+        }
+      });
+    }
+
     const encryptPassword = await bcrypt.hash(password, saltRounds);
     
     const dataUser = await User.create({
