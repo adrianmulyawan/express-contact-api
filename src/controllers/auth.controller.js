@@ -5,6 +5,7 @@ require('dotenv').config();
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
 const validator = require('validator');
+const sendEmail = require('../utils/sendMail');
 
 const saltRounds = +process.env.SALT_ROUNDS;
 
@@ -98,18 +99,30 @@ const register = async (req, res) => {
       expiredTime: new Date(),
     });
 
-    // > Result
-    return res.status(201).json({
-      status: 'Success',
-      statusCode: 201,
-      message: 'Register Successfully!',
-      data: {
-        userId: dataUser.id,
-        name: dataUser.name,
-        email: dataUser.email,
-        expiredTime: dataUser.expiredTime
-      }
-    });
+    // > Send email verification 
+    const result = await sendEmail(dataUser.email, dataUser.id);
+    if (!result) {
+      // > Result Error
+      return res.status(500).json({
+        status: 'Failed',
+        statusCode: 500,
+        message: 'Register Failed!',
+        error: 'Error Send Email Verification!'
+      });
+    } else {
+      // > Result Success
+      return res.status(201).json({
+        status: 'Success',
+        statusCode: 201,
+        message: 'Register Successfully, Please Check Your Email!',
+        data: {
+          userId: dataUser.id,
+          name: dataUser.name,
+          email: dataUser.email,
+          expiredTime: dataUser.expiredTime
+        }
+      });
+    }
 
   } catch (error) {
     return res.status(400).json({
