@@ -6,6 +6,7 @@ const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
 const validator = require('validator');
 const sendEmail = require('../utils/sendMail');
+const { Op } = require('sequelize')
 
 const saltRounds = +process.env.SALT_ROUNDS;
 
@@ -129,11 +130,82 @@ const register = async (req, res) => {
       status: 'Failed',
       statusCode: 400,
       message: 'Something Error in Register Controller!',
-      errorMessage: error.message
+      error: error.message
     });
   }
 };
 
+const activationAccount = async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    const user = await User.findOne({
+      where: {
+        id: userId,
+        isActive: false
+      }
+    });
+
+    // console.info(user, '=> data user');
+
+    if (!user) {
+      return res.status(400).json({
+        status: 'Failed',
+        statusCode: 400,
+        message: 'Activation Account Failed',
+        error: 'User Not Found!'
+      });
+    } else {
+      user.isActive = true;
+      user.expiredTime = null
+      await user.save();
+
+      return res.status(200).json({
+        status: 'Success',
+        statusCode: 200,
+        message: 'Activation Account Successfully!',
+        data: {
+          userId: user.id,
+          name: user.name,
+          email: user.email,
+          isActive: user.isActive
+        }
+      });
+    }
+
+  } catch (error) {
+    return res.status(400).json({
+      status: 'Failed',
+      statusCode: 400,
+      message: 'Something Error in Activation Account Controller!',
+      error: error.message
+    });
+  }
+};
+
+const getUsers = async (req, res) => {
+  try {
+    const users = await User.findAll();
+
+    return res.status(200).json({
+      status: 'Success',
+      statusCode: 200,
+      message: 'List of All Users!',
+      data: users
+    });
+
+  } catch (error) {
+    return res.status(400).json({
+      status: 'Failed',
+      statusCode: 400,
+      message: 'Something Error in getUsers Controller!',
+      error: error.message
+    });
+  }
+}
+
 module.exports = {
   register,
+  activationAccount,
+  getUsers,
 };
