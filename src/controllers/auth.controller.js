@@ -6,7 +6,7 @@ const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
 const validator = require('validator');
 const sendEmail = require('../utils/sendMail');
-const { Op } = require('sequelize')
+const jwt = require('jsonwebtoken');
 
 const saltRounds = +process.env.SALT_ROUNDS;
 
@@ -202,10 +202,116 @@ const getUsers = async (req, res) => {
       error: error.message
     });
   }
+};
+
+const login = async (req, res) => {
+  try {
+    // > Get data from body
+    const { email, password } = req.body;
+
+    // > Validasi form
+    if (validator.isEmpty(email)) {
+      return res.status(400).json({
+        status: 'Failed',
+        statusCode: 400,
+        message: 'Error in Email Field!',
+        error: 'Email is Empty!'
+      });
+    }
+
+    if (validator.isEmail(email) === false) {
+      return res.status(400).json({
+        status: 'Failed',
+        statusCode: 400,
+        message: 'Error in Email Field!',
+        error: 'Email not valid!'
+      });
+    }
+
+    if (validator.isEmpty(password)) {
+      return res.status(400).json({
+        status: 'Failed',
+        statusCode: 400,
+        message: 'Error in Password Field!',
+        error: 'Password is Required!'
+      });
+    }
+
+    // > cari user berdasarkan email
+    const user = await User.findOne({
+      where: {
+        email,
+        isActive: true
+      }
+    });
+
+    // > email tidak valid
+    if (!user) {
+      return res.status(400).json({
+        status: 'Failed',
+        statusCode: 400,
+        message: 'Error in Login Process!',
+        error: 'Email not valid!'
+      });
+    } 
+    // > email valid
+    else {
+      // > compare password
+      const decryptPassword = await bcrypt.compare(password, user.password);
+
+      // > password dont match
+      if (!decryptPassword) {
+        return res.status(400).json({
+          status: 'Failed',
+          statusCode: 400,
+          message: 'Error in Login Process!',
+          error: 'Check again your email and password!'
+        });
+      } 
+      // > password match
+      else {
+        // > Data user login
+        const dataUser = {
+          id: user.id,
+          name: user.name,
+          email: user.email
+        };
+
+        // > create access token
+        const generateAccessToken = jwt.sign(dataUser, process.env.PRIVATE_KEY, {
+          expiresIn: process.env.JWT_EXPIRED_IN
+        });
+
+        // > create refresh token
+        const generateRefreshToken = jwt.sign(dataUser, process.env.REFRESH_PRIVATE_KEY, {
+          expiresIn: process.env.JWT_REFRESH_EXPIRED_IN
+        });
+
+        // > Result
+        return res.status(200).json({
+          status: 'Success',
+          statusCode: 200,
+          message: 'Login Successfully!',
+          data: dataUser,
+          accessToken: generateAccessToken,
+          refreshToken: generateRefreshToken
+        });
+      }
+    }
+
+  } catch (error) {
+    return res.status(400).json({
+      status: 'Failed',
+      statusCode: 400,
+      message: 'Something Error in Login Controller!',
+      error: error.message
+    });
+  }
 }
 
 module.exports = {
   register,
   activationAccount,
   getUsers,
+  login
 };
