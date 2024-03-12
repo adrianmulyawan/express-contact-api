@@ -23,4 +23,12 @@ const checkUserEmail = async (req, res, next) => {
   next();
 };
 
-module.exports = checkUserEmail;
+// const checkLoginEmail = async (req, res) => {
+//   const { email } = req.body;
+
+//   const user = 
+// };
+
+module.exports = {
+  checkUserEmail
+};
