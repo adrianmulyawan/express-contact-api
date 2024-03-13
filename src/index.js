@@ -2,6 +2,8 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const path = require('path');
 require('dotenv').config();
+const cors = require('cors');
+
 const morganMiddleware = require('./middleware/morgan.middleware.js');
 const logger = require('./utils/logger.js');
 
@@ -9,6 +11,14 @@ const indexRouter = require('./routes/index.route.js');
 
 const app = express();
 const port = +process.env.APP_PORT;
+
+app.use(cors({
+  origin: true,
+  credentials: true,
+  preflightContinue: false,
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE"
+}));
+app.options("*", cors());
 
 app.use(morganMiddleware);
 app.use(express.json());
@@ -26,5 +36,5 @@ app.use('*', (req, res, next) => {
 });
 
 app.listen(port, () => {
-  console.info(`Express run in http://localhost:${port}`);
+  logger.info(`Express run in http://localhost:${port}`);
 });
