@@ -330,9 +330,87 @@ const login = async (req, res) => {
   }
 }
 
+const refreshToken = async (req, res) => {
+  try {
+    // > Tangkap bearer token yang dikirim oleh user
+    // => Setelah itu sanitize & ambil tokennya saja
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(" ")[1];
+
+    // > Bila token tidak ada
+    if (!token) {
+      return res.status(401).json({
+        status: 'Failed',
+        statusCode: 400,
+        message: 'Unauthorized!',
+        error: 'Refresh Token is Required!'
+      });
+    }
+
+    // > Verify token jwt 
+    const verifyToken = jwt.verify(token, process.env.REFRESH_PRIVATE_KEY);
+    if (!verifyToken) {
+      return res.status(401).json({
+        status: 'Failed',
+        statusCode: 400,
+        message: 'Unauthorized!',
+        error: 'Refresh Token is Invalid!'
+      });
+    }
+
+    // > Token match 
+    const user = await User.findOne({
+      where: {
+        email: verifyToken.email,
+        isActive: true
+      }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        status: 'Failed',
+        statusCode: 400,
+        message: 'User Not Found!',
+        error: 'User Not Found!'
+      });
+    } else {
+      const dataUser = {
+        id: user.id,
+        name: user.name,
+        email: user.email
+      }
+
+      const generateAccessToken = jwt.sign(dataUser, process.env.PRIVATE_KEY, {
+        expiresIn: process.env.JWT_EXPIRED_IN
+      });
+
+      const generateRefreshToken = jwt.sign(dataUser, process.env.REFRESH_PRIVATE_KEY, {
+        expiresIn: process.env.JWT_REFRESH_EXPIRED_IN
+      });
+
+      return res.status(200).json({
+        status: 'Success',
+        statusCode: 200,
+        message: 'Refresh Token Successfully!',
+        data: dataUser,
+        accessToken: generateAccessToken,
+        refreshToken: generateRefreshToken
+      });
+    }
+  } catch (error) {
+    return res.status(400).json({
+      status: 'Failed',
+      statusCode: 400,
+      message: 'Something Error in refreshToken Controller!',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   register,
   activationAccount,
   getUsers,
-  login
+  login,
+  refreshToken,
 };
