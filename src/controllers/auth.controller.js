@@ -13,7 +13,7 @@ const saltRounds = +process.env.SALT_ROUNDS;
 const register = async (req, res) => {
   try {
     // > Tangkap inputan user
-    const { name, email, password } = req.body;
+    const { name, email, password, confirmPassword } = req.body;
 
     // > Validasi Inputan
     if (validator.isEmpty(name)) {
@@ -59,12 +59,33 @@ const register = async (req, res) => {
       });
     }
 
+    if (validator.isEmpty(confirmPassword)) {
+      return res.status(400).json({
+        status: 'Failed',
+        statusCode: 400,
+        message: 'Error in Password Confirmation Field!',
+        error: 'Password Confirmation is Empty!'
+      });
+    }
+
+    // > Validasi apakah password dan password confirmation itu samaa
+    if (password !== confirmPassword) {
+      return res.status(400).json({
+        status: 'Failed',
+        statusCode: 400,
+        message: 'Registration Failed!',
+        error: 'Password amd Password Confirmation is dont match!'
+      });
+    }
+
+
     // > Cek user 
     const userExists = await User.findOne({
       where: {
         email: email
       }
     });
+    // console.info(userExists)
 
     if (userExists && userExists.isActive) {
       return res.status(400).json({
