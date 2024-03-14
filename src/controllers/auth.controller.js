@@ -5,9 +5,9 @@ require('dotenv').config();
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
 const validator = require('validator');
-const sendEmail = require('../utils/sendMail');
+const { sendEmail, sendResetPassword } = require('../utils/sendMail');
 const jwt = require('jsonwebtoken');
-const { use } = require('../routes/auth.route');
+const { Entropy, charset32 } = require('entropy-string');
 
 const saltRounds = +process.env.SALT_ROUNDS;
 
@@ -573,7 +573,86 @@ const deleteAccount = async (req, res) => {
       error: error.message
     });
   }
-}
+};
+
+const forgotPassword = async (req, res) => {
+  try {
+    const email = req.body.email
+
+    // > Validasi Inputan
+    if (validator.isEmpty(email)) {
+      return res.status(400).json({
+        status: 'Failed',
+        statusCode: 400,
+        message: 'Error in Email Field!',
+        error: 'Email is Empty!'
+      });
+    }
+
+    if (validator.isEmail(email) === false) {
+      return res.status(400).json({
+        status: 'Failed',
+        statusCode: 400,
+        message: 'Error in Email Field!',
+        error: 'Email not valid!'
+      });
+    }
+
+    const user = await User.findOne({
+      where: {
+        email: email,
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        status: 'Failed',
+        statusCode: 404,
+        message: 'Reset Password Failed!',
+        error: 'User Not Found!'
+      });
+    }
+
+    // > Get random password
+    const randomPassword = new Entropy({ bits: 60, charset: charset32 });
+    const stringPassword  = randomPassword.string();
+    const encryptPassword = await bcrypt.hash(stringPassword, saltRounds);
+    
+    // > Update data user
+    await User.update({
+      password: encryptPassword
+    }, {
+      where: {
+        id: user.id
+      }
+    });
+
+    const result = await sendResetPassword(user.email, stringPassword);
+
+    if (!result) {
+      return res.status(400).json({
+        status: 'Failed',
+        statusCode: 400,
+        message: 'Email not sent!',
+        error: 'Forgot Password Field!'
+      });
+    }
+
+    return res.status(200).json({
+      status: 'Success',
+      statusCode: 200,
+      messsage: 'Forgot Password Success, Please Check Your Email!'
+    });
+
+  } catch (error) {
+    return res.status(400).json({
+      status: 'Failed',
+      statusCode: 400,
+      message: 'Something Error in forgotPassword Controller!',
+      error: error.message
+    });
+  }
+};
 
 module.exports = {
   register,
@@ -582,5 +661,6 @@ module.exports = {
   login,
   refreshToken,
   updateProfile,
-  deleteAccount
+  deleteAccount,
+  forgotPassword
 };

@@ -8,7 +8,8 @@ const {
   login, 
   refreshToken, 
   updateProfile,
-  deleteAccount
+  deleteAccount,
+  forgotPassword
 } = require('../controllers/auth.controller.js');
 const { 
   checkUserEmail 
@@ -30,5 +31,7 @@ router.get('/users/refresh', refreshToken);
 router.patch('/users/profile/:id', [checkJWTToken], updateProfile);
 // => Delete account
 router.delete('/users/delete/:id', [checkJWTToken], deleteAccount);
+// => Forgot password
+router.get('/users/forgot-password', forgotPassword);
 
 module.exports = router;
