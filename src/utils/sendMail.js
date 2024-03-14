@@ -26,6 +26,24 @@ const createEmail = (email, token) => {
   };
 };
 
+const createResetPassword = (email, password) => {
+  return {
+    from: process.env.MAIL_FROM,
+    to: email,
+    subject: 'Forgot Password',
+    html:
+      "<h3>Your new account password is :</h3>" +
+      "<table>" +
+      "<tr><td>Email :</td><td>" +
+      email +
+      "</td></tr>" +
+      "<tr><td>Password :</td><td>" +
+      password +
+      "</td></tr>" +
+      "</table>",
+  };
+};
+
 const sendEmail = async (email, token) => {
   try {
     const info = await transporter.sendMail(createEmail(email, token));
@@ -37,4 +55,18 @@ const sendEmail = async (email, token) => {
   }
 };
 
-module.exports = sendEmail;
+const sendResetPassword = async (email, password) => {
+  try {
+    const info = await transporter.sendMail(createResetPassword(email, password));
+    console.info(`Email sent: ${info.response}`);
+    return true;
+  } catch (error) {
+    console.info(error.message);
+    throw error;
+  }
+};
+
+module.exports = {
+  sendEmail,
+  sendResetPassword,
+};
