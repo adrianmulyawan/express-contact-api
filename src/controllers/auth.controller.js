@@ -7,6 +7,7 @@ const { v4: uuidv4 } = require('uuid');
 const validator = require('validator');
 const sendEmail = require('../utils/sendMail');
 const jwt = require('jsonwebtoken');
+const { use } = require('../routes/auth.route');
 
 const saltRounds = +process.env.SALT_ROUNDS;
 
@@ -537,11 +538,49 @@ const updateProfile = async (req, res) => {
   }
 };
 
+const deleteAccount = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    
+    const user = await User.destroy({
+      where: {
+        id: userId,
+        isActive: true
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        status: 'Failed',
+        statusCode: 404,
+        message: 'Delete Failed!',
+        error: 'User Not Found!'
+      });
+    }
+
+    return res.status(200).json({
+      status: 'Success',
+      statusCode: 200,
+      message: 'Success Delete User!',
+      data: null
+    });
+
+  } catch (error) {
+    return res.status(400).json({
+      status: 'Failed',
+      statusCode: 400,
+      message: 'Something Error in deleteAccount Controller!',
+      error: error.message
+    });
+  }
+}
+
 module.exports = {
   register,
   activationAccount,
   getUsers,
   login,
   refreshToken,
-  updateProfile
+  updateProfile,
+  deleteAccount
 };
