@@ -78,7 +78,6 @@ const register = async (req, res) => {
       });
     }
 
-
     // > Cek user 
     const userExists = await User.findOne({
       where: {
@@ -407,10 +406,142 @@ const refreshToken = async (req, res) => {
   }
 };
 
+const updateProfile = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const { name, email, password, confirmPassword, oldPassword } = req.body;
+
+    // > Validasi Inputan
+    if (validator.isEmpty(name)) {
+      return res.status(400).json({
+        status: 'Failed',
+        statusCode: 400,
+        message: 'Error in Name Field!',
+        error: 'Name is Empty!'
+      });
+    } 
+
+    if (validator.isEmpty(email)) {
+      return res.status(400).json({
+        status: 'Failed',
+        statusCode: 400,
+        message: 'Error in Email Field!',
+        error: 'Email is Empty!'
+      });
+    }
+
+    if (validator.isEmail(email) === false) {
+      return res.status(400).json({
+        status: 'Failed',
+        statusCode: 400,
+        message: 'Error in Email Field!',
+        error: 'Email not valid!'
+      });
+    }
+
+    const sanitizePassword = validator.isStrongPassword(password, {
+      minLength: 8,
+      minLowercase: 1,
+      minUppercase: 1,
+      minNumbers: 1,
+      minSymbols: 0
+    });
+    if (sanitizePassword === false) {
+      return res.status(400).json({
+        status: 'Failed',
+        statusCode: 400,
+        message: 'Error in Password Field!',
+        error: 'Password Recuirment min length = 8, min lowercase = 1, min uppercase = 1, min number = 1'
+      });
+    }
+
+    if (validator.isEmpty(oldPassword)) {
+      return res.status(400).json({
+        status: 'Failed',
+        statusCode: 400,
+        message: 'Error in Old Password Field!',
+        error: 'Old Password is Empty!'
+      });
+    }
+
+    if (validator.isEmpty(confirmPassword)) {
+      return res.status(400).json({
+        status: 'Failed',
+        statusCode: 400,
+        message: 'Error in Password Confirmation Field!',
+        error: 'Password Confirmation is Empty!'
+      });
+    }
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({
+        status: 'Failed',
+        statusCode: 400,
+        message: 'Registration Failed!',
+        error: 'Password amd Password Confirmation is dont match!'
+      });
+    }
+
+    // Cari data user 
+    const user = await User.findOne({
+      where: {
+        id: userId,
+        isActive: true
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        status: 'Failed',
+        statusCode: 404,
+        message: 'Something Error!',
+        error: 'User Not Found!'
+      });
+    }
+
+    const checkPassword = await bcrypt.compare(oldPassword, user.password);
+
+    if (!checkPassword) {
+      return res.status(400).json({
+        status: 'Failed',
+        statusCode: 400,
+        message: 'Something Error in Old Password!',
+        error: 'Old Password Not Match!'
+      });
+    } else {
+      const encryptPassword = await bcrypt.hash(password, saltRounds);
+
+     const result = await user.update({
+      email: email || user.email,
+      name: name || user.name,
+      password: encryptPassword || user.password
+     });
+
+     return res.status(200).json({
+      status: 'Success',
+      statusCode: 200,
+      message: 'Success Update User Profile',
+      data: {
+        result
+      }
+     });
+    }
+
+  } catch (error) {
+    return res.status(400).json({
+      status: 'Failed',
+      statusCode: 400,
+      message: 'Something Error in updateProfile Controller!',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   register,
   activationAccount,
   getUsers,
   login,
   refreshToken,
+  updateProfile
 };
