@@ -130,7 +130,6 @@ const getContacts = async (req, res) => {
     const { first_name, last_name, full_name } = req.query;
 
     let whereCondition = {
-      user_id: req.user.id,
       [Op.or]: []
     };
 
