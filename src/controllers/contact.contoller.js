@@ -4,7 +4,7 @@ const Address = Model.Address;
 
 const { v4: uuidv4 } = require('uuid');
 const validator = require('validator');
-
+const { Op } = require('sequelize');
 
 const addNewContact = async (req, res) => {
   try {
@@ -125,6 +125,51 @@ const addNewContact = async (req, res) => {
   }
 };
 
+const getContacts = async (req, res) => {
+  try {
+    const { first_name, last_name, full_name } = req.query;
+
+    let whereCondition = {
+      user_id: req.user.id,
+      [Op.or]: []
+    };
+
+    if (first_name) {
+      whereCondition[Op.or].push({ first_name: first_name });
+    }
+    if (last_name) {
+      whereCondition[Op.or].push({ last_name: last_name });
+    }
+    if (full_name) {
+      whereCondition[Op.or].push({ full_name: full_name });
+    }
+
+    const contact = await Contact.findAll({
+      where: whereCondition,
+      include: {
+        model: Address,
+        as: 'addresses'
+      }
+    });
+    
+    return res.status(200).json({
+      status: 'Success',
+      statusCode: 200,
+      message: 'Data Contact Found!',
+      data: contact,
+      error: []
+    });
+  } catch (error) {
+    return res.status(400).json({
+      status: 'Failed',
+      statusCode: 400,
+      message: 'Something Error in getContacts Controller!',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   addNewContact,
+  getContacts,
 };
