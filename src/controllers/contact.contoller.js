@@ -168,7 +168,49 @@ const getContacts = async (req, res) => {
   }
 };
 
+const getContactById = async (req, res) => {
+  try {
+    const user_id = req.params.id;
+
+    const contact = await Contact.findAll({
+      where: {
+        user_id: user_id
+      },
+      include: {
+        model: Address,
+        as: 'addresses'
+      }
+    });
+
+    if (!contact) {
+      return res.status(404).json({
+        status: 'Failed',
+        statusCode: 404,
+        message: 'Contact Not Found!',
+        error: 'Sorry, User Dont Have Contact!'
+      });
+    }
+
+    return res.status(200).json({
+      status: 'Success',
+      statusCode: 200,
+      message: 'List of Contact',
+      data: contact,
+      error: []
+    });
+
+  } catch (error) {
+    return res.status(400).json({
+      status: 'Failed',
+      statusCode: 400,
+      message: 'Something Error in getContactById Controller!',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   addNewContact,
   getContacts,
+  getContactById,
 };
