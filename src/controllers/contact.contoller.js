@@ -339,9 +339,52 @@ const updateContact = async (req, res) => {
   }
 };
 
+const deleteContact = async (req, res) => {
+  try {
+    const contactId = req.params.id;
+
+    const addressDelete = await Address.destroy({
+      where: {
+        contact_id: contactId
+      }
+    });
+
+    const contactDelete = await Contact.destroy({
+      where: {
+        id: contactId
+      }
+    });
+
+    if (!addressDelete || !contactDelete) {
+      return res.status(400).json({
+        status: 'Failed',
+        statusCode: 400,
+        message: 'Delete Contact Failed!',
+        error: 'Contact Not Found!'
+      });
+    } 
+
+    return res.status(200).json({
+      status: 'Success',
+      statusCode: 200,
+      message: 'Delete Contact Successfully!',
+      error: []
+    });
+
+  } catch (error) {
+    return res.status(400).json({
+      status: 'Failed',
+      statusCode: 400,
+      message: 'Something Error in deleteContact Controller!',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   addNewContact,
   getContacts,
   getContactById,
   updateContact,
+  deleteContact,
 };
